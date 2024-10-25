@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:4.4.18
+    platform: linux/amd64
+    container_name: tasks-mongo
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017"
+    volumes:
+      - /Users/david/Study/data/code-challenges/mongodb/data:/data/db
+
+  mongo-express:
+    image: mongo-express:0.54.0
+    platform: linux/amd64
+    container_name: tasks-mexpress
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_URL=mongodb://root:password@mongo:27017/?authSource=admin
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=password
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+
+networks:
+  default:
+    name: challenges-network
