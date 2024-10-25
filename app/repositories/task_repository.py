@@ -1,5 +1,6 @@
 from app.models.task import Task
 
+
 class TaskRepository:
     @staticmethod
     def get_all_tasks():
@@ -26,3 +27,11 @@ class TaskRepository:
     def delete_task(task_id):
         task = Task.objects.get(id=task_id)
         task.delete()
+
+    @staticmethod
+    def search_tasks_by_title(search_term):
+        return Task.objects.search_text(search_term)
+
+    @staticmethod
+    def get_tasks_by_user(user):
+        return Task.objects(assignee=user)

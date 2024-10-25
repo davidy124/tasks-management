@@ -1,4 +1,5 @@
-from flask_restful import Resource, reqparse
+from flask_restful import Resource
+from flask import request
 from app.services.task_service import TaskService
 from mongoengine.errors import ValidationError
 import logging
@@ -20,56 +21,65 @@ class TaskResource(Resource):
             return {"message": "An error occurred"}, 500
 
     def put(self, task_id):
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', type=str)
-        parser.add_argument('description', type=str)
-        parser.add_argument('due_date', type=str)
-        parser.add_argument('status', type=str)
-        parser.add_argument('priority', type=str)
-        parser.add_argument('assignee', type=str)
-        args = parser.parse_args(strict=True)
-
+        logger.debug(f"PUT request for task_id: {task_id}")
         try:
-            task = TaskService.update_task(task_id, args)
+            task_data = request.get_json()
+            task = TaskService.update_task(task_id, task_data)
             return task.to_dict(), 200
         except ValueError as e:
+            logger.warning(str(e))
             return {"message": str(e)}, 404
         except ValidationError as e:
+            logger.error(f"Validation error: {str(e)}")
             return {"message": str(e)}, 400
+        except Exception as e:
+            logger.error(f"Error updating task: {str(e)}")
+            return {"message": "An error occurred"}, 500
 
     def delete(self, task_id):
         try:
             TaskService.delete_task(task_id)
             return {"message": "Task deleted successfully"}, 200
         except ValueError as e:
+            logger.warning(str(e))
             return {"message": str(e)}, 404
-
+        except Exception as e:
+            logger.error(f"Error deleting task: {str(e)}")
+            return {"message": "An error occurred"}, 500
 
 class TaskListResource(Resource):
     def get(self):
-        logger.debug("GET request for all tasks")
+        logger.debug("GET request for tasks")
+        search_term = request.args.get('search', '')
+        user_id = request.args.get('userid', '')
+
         try:
-            tasks = TaskService.get_all_tasks()
-            logger.info(f"Retrieved {len(tasks)} tasks")
+            if user_id:
+                tasks = TaskService.get_tasks_by_user(user_id)
+                logger.info(f"Retrieved {len(tasks)} tasks for user {user_id}")
+            elif search_term:
+                tasks = TaskService.search_tasks_by_title(search_term)
+                logger.info(f"Retrieved {len(tasks)} tasks matching '{search_term}'")
+            else:
+                tasks = TaskService.get_all_tasks()
+                logger.info(f"Retrieved {len(tasks)} tasks")
             return [task.to_dict() for task in tasks], 200
+        except ValueError as e:
+            logger.warning(str(e))
+            return {"message": str(e)}, 400
         except Exception as e:
-            logger.error(f"Error getting all tasks: {str(e)}", exc_info=True)
+            logger.error(f"Error getting tasks: {str(e)}", exc_info=True)
             return {"message": "An error occurred", "error": str(e)}, 500
 
     def post(self):
         logger.debug("POST request to create a new task")
-        parser = reqparse.RequestParser()
-        parser.add_argument('title', type=str, required=True)
-        parser.add_argument('description', type=str)
-        parser.add_argument('due_date', type=str)
-        parser.add_argument('status', type=str)
-        parser.add_argument('priority', type=str)
-        parser.add_argument('assignee', type=str)
-        args = parser.parse_args(strict=True)
-
         try:
-            task = TaskService.create_task(args)
+            task_data = request.get_json()
+            task = TaskService.create_task(task_data)
             return task.to_dict(), 201
+        except ValueError as e:
+            logger.warning(str(e))
+            return {"message": str(e)}, 400
         except ValidationError as e:
             logger.error(f"Validation error: {str(e)}")
             return {"message": str(e)}, 400

@@ -27,3 +27,7 @@ class UserRepository:
     def delete_user(user_id):
         user = User.objects.get(id=user_id)
         user.delete()
+
+    @staticmethod
+    def search_users_by_username(search_term):
+        return User.objects.search_text(search_term)

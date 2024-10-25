@@ -61,13 +61,13 @@ def create_app():
     from app.resources.task_resource import TaskResource, TaskListResource
     from app.resources.user_resource import UserResource, UserListResource
 
-    api = Api(app)
+    api = Api(app, prefix='/api')
     api.add_resource(TaskListResource, '/tasks')
     api.add_resource(TaskResource, '/tasks/<string:task_id>')
     api.add_resource(UserListResource, '/users')
     api.add_resource(UserResource, '/users/<string:user_id>')
 
-    @app.route('/health', methods=['GET'])
+    @app.route('/api/health', methods=['GET'])
     def health_check():
         try:
             with app.app_context():
@@ -84,7 +84,7 @@ def create_app():
                 "error": str(e)
             }), 500
 
-    @app.route('/test', methods=['GET'])
+    @app.route('/api/test', methods=['GET'])
     def test_endpoint():
         return jsonify({"message": "Test endpoint working"}), 200
 
